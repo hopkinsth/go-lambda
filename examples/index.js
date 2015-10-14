@@ -14,7 +14,7 @@ process.env.PATH = process.env.PATH + ':' + process.env.LAMBDA_TASK_ROOT;
 var contexts = {};
 var cproc;
 
-cproc = spawn('./aws', [], {
+cproc = spawn('./examples', [], {
   cwd: process.cwd(),
   env: process.env,
   stdio: [
@@ -38,9 +38,10 @@ cproc.on('exit', function (c) {
 });
 
 cproc.stdout.on('data', function (chk) {
+  console.log('stdoutdata', chk.toString('utf8'));
   var data = JSON.parse(chk);
   var ctx = contexts[data.requestId];
-  console.log(data);
+
   if (ctx) {
     ctx.succeed(data);
     delete contexts[data.requestId];

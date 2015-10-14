@@ -2,6 +2,9 @@ package lambda
 
 import "encoding/json"
 
+var cfg *Config
+var ipc *streams
+
 type LambdaContext struct {
 	AwsRequestID             string `json:"awsRequestId"`
 	FunctionName             string `json:"functionName"`
@@ -19,22 +22,46 @@ type Request struct {
 	// default context object
 	Context *LambdaContext `json:"context"`
 
-	ResponseData chan interface{} `json:"-"`
-	response     Response
+	response Response `json:"-"`
+	ipc      *streams `json:"-"`
+}
+
+func (r *Request) Succeed(data interface{}) {
+	r.response.Data = data
+	r.ipc.outch <- &r.response
+}
+
+func (r *Request) Error(err error) {
+	r.response.Error = err.Error()
+	r.ipc.outch <- &r.response
 }
 
 type Response struct {
 	RequestId string      `json:"requestId"`
-	Error     *string     `json:"error"`
+	Error     string      `json:"error"`
 	Data      interface{} `json:"data"`
 }
 
-func Listen() <-chan Request {
-	ch := make(chan Request)
-	gStream.add(ch)
-	return ch
+type Config struct {
 }
 
-func init() {
-	gStream.begin()
+//
+func Setup(icfg *Config) {
+	if cfg == nil {
+		if icfg == nil {
+			icfg = &Config{}
+		}
+
+		cfg = icfg
+	}
+
+	if ipc == nil {
+		ipc = openStreams(cfg)
+		ipc.begin()
+	}
+}
+
+func Listen() <-chan *Request {
+	Setup(nil)
+	return ipc.inch
 }

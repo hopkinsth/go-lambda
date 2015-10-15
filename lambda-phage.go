@@ -45,7 +45,8 @@ type Response struct {
 type Config struct {
 }
 
-//
+// sets up the IPC mechanism for communication with
+// the parent process & opens the IPC streams
 func Setup(icfg *Config) {
 	if cfg == nil {
 		if icfg == nil {
@@ -61,6 +62,8 @@ func Setup(icfg *Config) {
 	}
 }
 
+// returns a receive-only channel that will
+// receive requests from the parent process
 func Listen() <-chan *Request {
 	Setup(nil)
 	return ipc.inch

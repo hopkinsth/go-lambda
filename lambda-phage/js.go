@@ -1,3 +1,6 @@
+package main
+
+var jsloader = `
 /**
  * lambda-phage entrypoint 
  * at time of writing, AWS Lambda
@@ -67,3 +70,4 @@ function decodeMaybe(s) {
     return {};
   }
 }
+`

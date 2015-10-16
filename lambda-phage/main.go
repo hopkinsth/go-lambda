@@ -19,7 +19,7 @@ func main() {
 		Run:   pkg,
 	}
 
-	var root = &cobra.Command{Use: "app"}
+	var root = &cobra.Command{Use: "lambda-phage"}
 	root.AddCommand(pkgCmd)
 	root.Execute()
 }

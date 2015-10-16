@@ -5,11 +5,6 @@ import "io"
 import "encoding/json"
 import "fmt"
 
-type getReq chan<- Request
-
-func (g getReq) deliver() {
-}
-
 type streams struct {
 	in    io.Reader
 	out   io.Writer

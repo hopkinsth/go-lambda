@@ -7,6 +7,9 @@ import "os"
 import "io"
 import "os/exec"
 import "github.com/lucsky/cuid"
+import "runtime"
+import "github.com/tj/go-debug"
+import "bytes"
 
 func main() {
 	pkgCmd := &cobra.Command{

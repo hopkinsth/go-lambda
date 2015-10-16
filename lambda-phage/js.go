@@ -1,6 +1,6 @@
 package main
 
-var jsloader = `
+var jsloader []byte = []byte(`
 /**
  * lambda-phage entrypoint 
  * at time of writing, AWS Lambda
@@ -70,4 +70,4 @@ function decodeMaybe(s) {
     return {};
   }
 }
-`
+`)

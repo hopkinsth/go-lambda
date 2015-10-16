@@ -50,40 +50,127 @@ func pkg(c *cobra.Command, _ []string) {
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Printf("error building go program, %s", err.Error())
+		fmt.Printf("Error building go executable, %s", err.Error())
 		return
 	}
 
-	zFile, err := os.Create(binName + ".zip")
+	zFile, err := newZipFile(binName + ".zip")
 	if err != nil {
-		fmt.Printf("error creating zip file, %s", err.Error())
+		zipFileFail(err)
 		return
 	}
 
-	zWr := zip.NewWriter(zFile)
+	_, err = zFile.AddFile("/tmp/" + binName)
 
-	binZip, err := zWr.Create(binName)
 	if err != nil {
-		fmt.Printf("error adding to zip file, %s", err.Error())
+		zipFileFail(err)
 		return
 	}
 
-	bFile, err := os.Open("/tmp/" + binName)
+	_, err = zFile.AddString("index.js", jsloader)
+
 	if err != nil {
-		fmt.Printf("error opening compiled binary, %s", err.Error())
+		zipFileFail(err)
 		return
 	}
 
-	_, err = io.Copy(binZip, bFile)
+	err = zFile.Close()
+
+}
+
+type zipFile struct {
+	f *os.File
+	*zip.Writer
+}
+
+// creates a new zip file
+func newZipFile(fName string) (*zipFile, error) {
+	f, err := os.Create(fName)
 	if err != nil {
-		fmt.Printf("error adding to zip file, %s", err.Error())
-		return
+		return nil, err
 	}
 
-	err = zWr.Close()
+	return &zipFile{
+		f,
+		zip.NewWriter(f),
+	}, nil
+}
+
+// adds a file to this archive
+func (z *zipFile) AddFile(fName string) (int64, error) {
+	debug := debug.Debug("zipFile.AddFile")
+	debug("opening source file")
+	f, err := os.Open(fName)
 	if err != nil {
-		fmt.Printf("error creating zip file, %s", err.Error())
-		return
+		return 0, err
 	}
 
+	debug("source file opened")
+
+	// want to make sure we get the base name for a file,
+	// so fstat it, which is able to do that
+	debug("fstat source file")
+	s, err := f.Stat()
+	if err != nil {
+		return 0, err
+	}
+	bName := s.Name()
+
+	// add file to archive
+	debug("adding file to archive")
+	wr, err := z.Create(bName)
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := io.Copy(wr, f)
+	if err != nil {
+		return 0, err
+	}
+
+	err = f.Close()
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
+
+// adds a file from string data to the archive
+func (z *zipFile) AddString(fName string, str []byte) (int64, error) {
+	debug := debug.Debug("zipFile.AddString")
+
+	buf := bytes.NewBuffer(str)
+
+	// add file to archive
+	debug("adding file to archive")
+
+	wr, err := z.Create(fName)
+	if err != nil {
+		return 0, err
+	}
+
+	debug("copying data for file")
+	n, err := io.Copy(wr, buf)
+	if err != nil {
+		return 0, err
+	}
+
+	return n, nil
+}
+
+// closes the writer and the file
+func (z *zipFile) Close() error {
+	err := z.Writer.Close()
+	if err != nil {
+		return err
+	}
+
+	return z.f.Close()
+}
+
+func zipFileFail(err error) {
+	_, f, l, _ := runtime.Caller(1)
+	fmt.Printf("[%s:%s]error creating zip file, %s\n", f, l, err.Error())
+	return
 }
